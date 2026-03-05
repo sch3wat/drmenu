@@ -13,13 +13,14 @@
             --accent: #f39c12;
         }
 
-        html { scroll-behavior: none; }
+        html { scroll-behavior: smooth; }
 
         body {
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: url('castle.png') no-repeat center center fixed;
+            /* Исправлено: убран fixed, чтобы фон не ломался на мобильных */
+            background: url('castle.png') no-repeat center center;
             background-size: cover;
             color: var(--text-color);
             min-height: 100vh;
@@ -43,13 +44,13 @@
 
         #intro-video {
             position: absolute;
-    top: 0; left: 0; 
-    width: 100%; 
-    height: 100%;
-    /* Меняем cover на contain, чтобы видео не обрезалось */
-    object-fit: contain; 
-    opacity: 0; 
-    transition: opacity 0.4s ease;
+            top: 0; left: 0; 
+            width: 100%; 
+            height: 100%;
+            /* Видео не обрезается */
+            object-fit: contain; 
+            opacity: 0; 
+            transition: opacity 0.4s ease;
         }
 
         #intro-text {
@@ -64,9 +65,8 @@
             transition: transform 0.8s ease-in, opacity 0.4s ease-in;
         }
 
-        /* Класс для запуска анимации через JS */
         .zoom-out-text {
-            transform: scale(25); /* Текст улетает "за камеру" */
+            transform: scale(25);
             opacity: 0;
         }
         /* ========================================= */
@@ -383,7 +383,6 @@
         <section id="hot">
             <h2>🍰 Десерты, Кофе и Чай</h2>
             <div class="menu-grid">
-                  </div>
                 <div class="item">
                     <span class="item-title">☕ Кофе</span>
                     <span class="item-desc">Готовим на био-зерне: Эспрессо, Капучино, Американо или Латте Макиато. (Любой кофе можем сделать на <strong>овсяном молоке</strong>).</span>
@@ -401,7 +400,6 @@
 
         <section id="orderform">
             <h2>📝 Сделать заказ</h2>
-            <p>Отметьте всё, что выбрали выше, и нажмите "Отправить" в самом низу формы!</p>
             <div class="form-container">
                 <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSeZRkM6eXrxC7RPvOeXbeha_di-8JjvuMShEp5m1Qj0o8QEjA/viewform?embedded=true" width="100%" height="3461" frameborder="0" marginheight="0" marginwidth="0">Загрузка…</iframe>
             </div>
@@ -413,47 +411,43 @@
     <a href="#orderform" class="order-btn">ОФОРМИТЬ ЗАКАЗ 👇</a>
 </div>
 
-
-
 <script>
+    // Инициализация Telegram WebApp
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
+    window.Telegram.WebApp.disableVerticalSwipes();
 
     document.addEventListener('DOMContentLoaded', () => {
         const introScreen = document.getElementById('intro-screen');
         const introText = document.getElementById('intro-text');
         const introVideo = document.getElementById('intro-video');
 
-        // 1. Показываем текст на 1 секунду
+        // 1. Показываем текст, через секунду запускаем анимацию
         setTimeout(() => {
-            // 2. Запускаем "влет" камеры в текст
             introText.classList.add('zoom-out-text');
             
-            // 3. Синхронно проявляем видео
+            // 2. Синхронно проявляем видео
             introVideo.style.opacity = 1;
-            introVideo.play().catch(e => console.log("Video play error"));
+            introVideo.play().catch(e => console.log("Video play error:", e));
         }, 1000);
 
-        // 4. Когда видео закончится, убираем заставку
+        // 3. Скрываем заставку после завершения видео
         introVideo.onended = () => {
             introScreen.style.opacity = 0;
-            setTimeout(() => { introScreen.style.display = 'none'; }, 800);
+            setTimeout(() => { 
+                introScreen.style.display = 'none'; 
+            }, 800);
         };
         
-        // Запасной таймер
+        // 4. Запасной таймер (если видео не прогрузится)
         setTimeout(() => {
-            if (introScreen.style.display !== 'none') {
+            if (introScreen && introScreen.style.display !== 'none') {
                 introScreen.style.opacity = 0;
-                setTimeout(() => introScreen.style.display = 'none', 800);
+                setTimeout(() => { introScreen.style.display = 'none'; }, 800);
             }
         }, 8000);
     });
 </script>
-window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand();
-    
-    // ДОБАВЬ ЭТУ СТРОКУ:
-    window.Telegram.WebApp.disableVerticalSwipes(); 
-</script>
 </body>
 </html>
+
