@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Меню на День Рождения</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --glass: rgba(20, 20, 20, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+            --accent: #f39c12;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: url('castle.png') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* =========================================
+           ЭКРАН ЗАСТАВКИ (INTRO SCREEN)
+           ========================================= */
+        #intro-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-in-out;
+            overflow: hidden;
+        }
+
+        #intro-video {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0; /* Скрыто изначально */
+            transition: opacity 0.4s ease; /* Быстрое появление */
+        }
+
+        #intro-text {
+            position: relative;
+            z-index: 2;
+            font-size: 32px;
+            font-weight: 900;
+            color: #f39c12;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(243, 156, 18, 0.8);
+            letter-spacing: 2px;
+            transition: transform 0.8s ease-in, opacity 0.4s ease-in;
+        }
+
+        /* Класс для запуска анимации через JS */
+        .zoom-out-text {
+            transform: scale(25); /* Текст улетает "за камеру" */
+            opacity: 0;
+        }
+        /* ========================================= */
+
+        .overlay {
+            background: rgba(0, 0, 0, 0.55);
+            min-height: 100vh;
+            padding-bottom: 120px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 20px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
+        }
+
+        h1 { margin: 0; font-size: 26px; font-weight: 800; }
+        p { opacity: 0.9; font-size: 15px; margin-top: 10px; }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            overflow-x: auto;
+            padding: 12px 15px;
+            gap: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        nav a {
+            text-decoration: none;
+            color: white;
+            white-space: nowrap;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid var(--glass-border);
+            transition: 0.3s;
+        }
+
+        nav a:active { background: var(--accent); color: #000; }
+        nav::-webkit-scrollbar { display: none; }
+
+        .container { padding: 20px; }
+        section { margin-bottom: 40px; scroll-margin-top: 80px; }
+
+        h2 {
+            border-left: 4px solid var(--accent);
+            padding-left: 12px;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .menu-grid { display: grid; gap: 15px; }
+
+        .item {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .item-title {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 8px;
+            display: block;
+            color: #fff;
+        }
+
+        .item-desc {
+            font-size: 14px;
+            color: #e0e0e0;
+            line-height: 1.5;
+        }
+
+        .tag {
+            font-size: 11px;
+            background: var(--accent);
+            color: #000;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            font-weight: 800;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .order-btn-container {
+            position: fixed;
+            bottom: 25px;
+            left: 0; right: 0;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+
+        .order-btn {
+            background: var(--accent);
+            color: #000;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 18px;
+            box-shadow: 0 8px 25px rgba(243, 156, 18, 0.5);
+            border: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+<div id="intro-screen">
+    <video id="intro-video" src="intro.mp4" playsinline muted></video>
+    <div id="intro-text">Добро пожаловать</div>
+</div>
+
+<div class="overlay">
+    <header>
+        <h1>🎉 Праздничное Меню</h1>
+        <p>Изучите все вкусности, а потом заполните форму заказа в самом низу!</p>
+    </header>
+
+    <nav>
+        <a href="#food">🍽️ Еда</a>
+        <a href="#aperitif">🥂 Аперитивы</a>
+        <a href="#wine">🍷 Вино</a>
+        <a href="#beer">🍺 Пиво</a>
+        <a href="#soft">🥤 Без алкоголя</a>
+        <a href="#hot">☕ Десерт и Кофе</a>
+    </nav>
+
+    <div class="container">
+        <section id="food">
+            <h2>🍽️ Основная Еда</h2>
+            <div class="menu-grid">
+                <div class="item">
+                    <span class="tag">Тонкий пирог (Фламкухен)</span>
+                    <span class="item-title">🥓 Классический (Elsässer)</span>
+                    <span class="item-desc"><strong>Состав:</strong> Сметана, подкопченный бекон (шпик), красный лук и свежий зеленый лук на тонком хрустящем тесте.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Тонкий пирог (Фламкухен)</span>
+                    <span class="item-title">🥒 Огородный (Schrebergarten)</span>
+                    <span class="item-desc"><strong>Состав:</strong> Сметана, кабачки (цукини), сладкий перец, лук и расплавленный сыр Эмменталь.</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #2ecc71;">🌱 Веган</span>
+                    <span class="item-title">🌿 Веганский Фламкухен</span>
+                    <span class="item-desc"><strong>Состав:</strong> Оливковое масло (вместо сметаны), кабачки (цукини), сладкий перец и зеленый лук.</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #e74c3c; color: white;">Сладкое</span>
+                    <span class="item-title">🍯 Сладкая гора (Süsser Berg)</span>
+                    <span class="item-desc"><strong>Состав:</strong> Десертный фламкухен со сметаной, ароматной корицей, тыквенными семечками и настоящим лесным медом.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Сытный Пирог (Киш)</span>
+                    <span class="item-title">🧀 Киш "Шпинат и Фета"</span>
+                    <span class="item-desc">Запеченный открытый пирог со шпинатом, сыром фета, зирой и кунжутом. Подается с домашним травяным творогом.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Сытный Пирог (Киш)</span>
+                    <span class="item-title">🥓 Киш "Ветчина и Лук-порей"</span>
+                    <span class="item-desc">Запеченный сытный мясной пирог. Подается с домашним травяным творогом.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Горячее</span>
+                    <span class="item-title">🌭 Сосиска-гриль (Grillwurst)</span>
+                    <span class="item-desc">Классическая жареная красная сосиска со свежей хрустящей булочкой.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Горячее</span>
+                    <span class="item-title">🥣 Домашний суп дня</span>
+                    <span class="item-desc">Согревающий горячий суп. Подается с поджаренным тостом и сливочным маслом.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="aperitif">
+            <h2>🥂 Аперитивы и Коктейли</h2>
+            <div class="menu-grid">
+                <div class="item">
+                    <span class="item-title">🍾 Игристое вино Secco M</span>
+                    <span class="item-desc">Легкое игристое вино. Во вкусе: мускат, айва, апельсин и яблоневый цвет.</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍹 Aperol Sprizz</span>
+                    <span class="item-desc">Любимая классика! Белое вино, горьковато-сладкий Апероль, лед, свежий апельсин и газировка.</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🌿 Hugo</span>
+                    <span class="item-desc">Очень освежающий микс: белое вино, сладкий сироп бузины, лед, мята, лайм и газировка.</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍸 Lillet Culetto</span>
+                    <span class="item-desc">Элегантный и легкий коктейль: белое вино, французский аперитив Lillet Blanc, лед и газировка.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="wine">
+            <h2>🍷 Винная карта</h2>
+            <div class="menu-grid">
+                <div class="item">
+                    <span class="tag">Белые вина</span>
+                    <span class="item-title">🥂 Burgwein Weiß (Сухое)</span>
+                    <span class="item-desc">Легкое, простое и питкое вино с приятными нотками желтых фруктов.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Белые вина</span>
+                    <span class="item-title">🥂 Grauer Burgunder (Сухое)</span>
+                    <span class="item-desc">Благородное белое вино с ароматом груши, миндаля и легкой медовой ноткой.</span>
+                </div>
+                <div class="item">
+                    <span class="tag">Белые вина</span>
+                    <span class="item-title">🥂 Riesling (Полусухое)</span>
+                    <span class="item-desc">Освежающее белое вино с ярким и сочным ароматом зеленых яблок и персика.</span>
+                </div>
+                
+                <div class="item">
+                    <span class="tag" style="background: #e74c3c; color: white;">Красные вина</span>
+                    <span class="item-title">🍷 Burgwein Rot (Сухое)</span>
+                    <span class="item-desc">Классическое красное вино с нотами черной смородины и вишни.</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #e74c3c; color: white;">Красные вина</span>
+                    <span class="item-title">🍷 Spätburgunder (Полусухое)</span>
+                    <span class="item-desc">Очень мягкое красное вино с насыщенным сладковатым ягодным вкусом.</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #e74c3c; color: white;">Красные вина</span>
+                    <span class="item-title">🍷 Lemberger (Сухое)</span>
+                    <span class="item-desc">Гордость региона! Плотное, терпкое, с нотами сливы, ежевики и можжевельника.</span>
+                </div>
+
+                <div class="item">
+                    <span class="tag" style="background: #ff9ff3;">Розе и Легкое</span>
+                    <span class="item-title">🌸 Розовое: Burgwein Rose</span>
+                    <span class="item-desc">Сухое, легкое летнее вино со вкусом свежей клубники и малины.</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #a29bfe; color: white;">Винный Шорле</span>
+                    <span class="item-title">🫧 Вино с газировкой</span>
+                    <span class="item-desc">Любое вино (белое, красное или розовое), наполовину разбавленное минеральной водой.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="beer">
+            <h2>🍺 Пиво Rothaus</h2>
+            <div class="menu-grid">
+                <div class="item">
+                    <span class="item-title">🍻 Tannenzäpfle (0.33 л)</span>
+                    <span class="item-desc">Знаменитое на всю Германию местное светлое пиво (Пилснер) в фирменной бутылочке.</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍺 Rothaus Pils (0.5 л)</span>
+                    <span class="item-desc">Классическое светлое пиво (большой бокал).</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🌾 Rothaus Hefeweizen (0.5 л)</span>
+                    <span class="item-desc">Мягкое нефильтрованное пшеничное пиво.</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍋 Radler (0.5 л)</span>
+                    <span class="item-desc">Светлое пиво, наполовину смешанное с освежающим лимонадом (сладкое, мало алкоголя).</span>
+                </div>
+                <div class="item">
+                    <span class="tag" style="background: #bdc3c7;">Без алкоголя</span>
+                    <span class="item-title">🚫 Безалкогольное пиво</span>
+                    <span class="item-desc">Можно заказать классическое светлое пиво или сладкий Радлер совершенно без градусов.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="soft">
+            <h2>🥤 Безалкогольные напитки</h2>
+            <div class="menu-grid">
+                <div class="item">
+                    <span class="item-title">🧃 Натуральные соки (0.3 л)</span>
+                    <span class="item-desc">На выбор: яблочный, красный виноградный или тропическая маракуйя. (Можно сделать шорле — смешать с минералкой).</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍋 Лимонады</span>
+                    <span class="item-desc">На выбор: классический лимонный, маракуйя-лайм или фирменный бузина-лайм (Holunderkracher).</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">💧 Минеральная вода</span>
+                    <span class="item-desc">Местная вода Burgwasser: без газа, слабогазированная (Medium) или с сильным газом (Classic).</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="hot">
+            <h2>🍰 Десерты, Кофе и Чай</h2>
+            <div class="menu-grid">
+                  </div>
+                <div class="item">
+                    <span class="item-title">☕ Кофе</span>
+                    <span class="item-desc">Готовим на био-зерне: Эспрессо, Капучино, Американо или Латте Макиато. (Любой кофе можем сделать на <strong>овсяном молоке</strong>).</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍫 Горячий шоколад</span>
+                    <span class="item-desc">Настоящий швейцарский шоколад Caotina: Темный или Белый. (Можно добавить шот эспрессо — получится Chococino).</span>
+                </div>
+                <div class="item">
+                    <span class="item-title">🍵 Органический Чай (Bioteaque)</span>
+                    <span class="item-desc">Огромный выбор: черный (Ассам/Дарджилинг), зеленый, фруктовый, травяной (мята/альпийский сбор) или пряный согревающий Chai Latte.</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="orderform">
+            <h2>📝 Сделать заказ</h2>
+            <p>Отметьте всё, что выбрали выше, и нажмите "Отправить" в самом низу формы!</p>
+            <div class="form-container">
+                <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSeZRkM6eXrxC7RPvOeXbeha_di-8JjvuMShEp5m1Qj0o8QEjA/viewform?embedded=true" width="100%" height="3461" frameborder="0" marginheight="0" marginwidth="0">Загрузка…</iframe>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="order-btn-container">
+    <a href="#orderform" class="order-btn">ОФОРМИТЬ ЗАКАЗ 👇</a>
+</div>
+
+
+
+<script>
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const introScreen = document.getElementById('intro-screen');
+        const introText = document.getElementById('intro-text');
+        const introVideo = document.getElementById('intro-video');
+
+        // 1. Показываем текст на 1 секунду
+        setTimeout(() => {
+            // 2. Запускаем "влет" камеры в текст
+            introText.classList.add('zoom-out-text');
+            
+            // 3. Синхронно проявляем видео
+            introVideo.style.opacity = 1;
+            introVideo.play().catch(e => console.log("Video play error"));
+        }, 1000);
+
+        // 4. Когда видео закончится, убираем заставку
+        introVideo.onended = () => {
+            introScreen.style.opacity = 0;
+            setTimeout(() => { introScreen.style.display = 'none'; }, 800);
+        };
+        
+        // Запасной таймер
+        setTimeout(() => {
+            if (introScreen.style.display !== 'none') {
+                introScreen.style.opacity = 0;
+                setTimeout(() => introScreen.style.display = 'none', 800);
+            }
+        }, 8000);
+    });
+</script>
+
+</body>
+</html>
