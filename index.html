@@ -19,12 +19,11 @@
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            /* Исправлено: убран fixed, чтобы фон не ломался на мобильных */
-            background: url('castle.png') no-repeat center center;
+            background: url('castle.png') no-repeat center center fixed;
             background-size: cover;
             color: var(--text-color);
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow-x: clip; /* Исправлено для устранения конфликтов прокрутки */
         }
 
         /* =========================================
@@ -47,7 +46,7 @@
             top: 0; left: 0; 
             width: 100%; 
             height: 100%;
-            /* Видео не обрезается */
+            /* Меняем cover на contain, чтобы видео не обрезалось */
             object-fit: contain; 
             opacity: 0; 
             transition: opacity 0.4s ease;
@@ -65,8 +64,9 @@
             transition: transform 0.8s ease-in, opacity 0.4s ease-in;
         }
 
+        /* Класс для запуска анимации через JS */
         .zoom-out-text {
-            transform: scale(25);
+            transform: scale(25); /* Текст улетает "за камеру" */
             opacity: 0;
         }
         /* ========================================= */
@@ -166,9 +166,10 @@
         .form-container {
             background: white;
             border-radius: 16px;
-            overflow: hidden;
             margin-top: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            -webkit-overflow-scrolling: touch; /* Возвращает нормальный скролл на iPhone */
+            /* Убрано overflow: hidden; которое ломало форму на мобильных */
         }
 
         .order-btn-container {
@@ -400,8 +401,9 @@
 
         <section id="orderform">
             <h2>📝 Сделать заказ</h2>
+            <p>Отметьте всё, что выбрали выше, и нажмите "Отправить" в самом низу формы!</p>
             <div class="form-container">
-                <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSeZRkM6eXrxC7RPvOeXbeha_di-8JjvuMShEp5m1Qj0o8QEjA/viewform?embedded=true" width="100%" height="3461" frameborder="0" marginheight="0" marginwidth="0">Загрузка…</iframe>
+                <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSeZRkM6eXrxC7RPvOeXbeha_di-8JjvuMShEp5m1Qj0o8QEjA/viewform?embedded=true" width="100%" height="5200" frameborder="0" marginheight="0" marginwidth="0" scrolling="no">Загрузка…</iframe>
             </div>
         </section>
     </div>
@@ -412,7 +414,7 @@
 </div>
 
 <script>
-    // Инициализация Telegram WebApp
+    // Правильно объединенный скрипт
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
     window.Telegram.WebApp.disableVerticalSwipes();
@@ -422,32 +424,30 @@
         const introText = document.getElementById('intro-text');
         const introVideo = document.getElementById('intro-video');
 
-        // 1. Показываем текст, через секунду запускаем анимацию
+        // 1. Показываем текст на 1 секунду
         setTimeout(() => {
+            // 2. Запускаем "влет" камеры в текст
             introText.classList.add('zoom-out-text');
             
-            // 2. Синхронно проявляем видео
+            // 3. Синхронно проявляем видео
             introVideo.style.opacity = 1;
-            introVideo.play().catch(e => console.log("Video play error:", e));
+            introVideo.play().catch(e => console.log("Video play error"));
         }, 1000);
 
-        // 3. Скрываем заставку после завершения видео
+        // 4. Когда видео закончится, убираем заставку
         introVideo.onended = () => {
             introScreen.style.opacity = 0;
-            setTimeout(() => { 
-                introScreen.style.display = 'none'; 
-            }, 800);
+            setTimeout(() => { introScreen.style.display = 'none'; }, 800);
         };
         
-        // 4. Запасной таймер (если видео не прогрузится)
+        // Запасной таймер
         setTimeout(() => {
-            if (introScreen && introScreen.style.display !== 'none') {
+            if (introScreen.style.display !== 'none') {
                 introScreen.style.opacity = 0;
-                setTimeout(() => { introScreen.style.display = 'none'; }, 800);
+                setTimeout(() => introScreen.style.display = 'none', 800);
             }
         }, 8000);
     });
 </script>
 </body>
 </html>
-
